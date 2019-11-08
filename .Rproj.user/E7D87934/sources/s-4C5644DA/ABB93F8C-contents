@@ -1,127 +1,71 @@
-read_data = function (input = "C:\\Users\\FanslyFTW\\Documents\\GitHub\\app\\Datasets\\mx 426933_Morrissey_HILIC posESI_negESI_human serum_11-2018 submit_injorder.xlsx")
-{
-  pacman::p_load(openxlsx, data.table)
+read_data = function(input = "C:\\Users\\Sili\\Desktop\\projects\\mx 399706 Chris Morrissey\\mx 399706 Chris Morrissey, mouse serum, March 2018.xlsx", sheet  = 1){
+  library(data.table)
   
-  if (grepl("xlsx", input)) {
-    d <- openxlsx::read.xlsx(input, sheet = 1, colNames = FALSE)
-  }else if (grepl("csv", input)) {
-    d <- data.table::fread(input)
-  }
-  data = d
-  start_col_index = min(which(diff(which(is.na(data[1,])))>1)+1)
-  if(start_col_index==Inf){
-    start_col_index = max(which(is.na(data[1,])))+1
-  }
   
-  start_row_index = min(which(diff(which(is.na(data[,1])))>1)+1)
-  if(start_row_index==Inf){
-    start_row_index = max(which(is.na(data[,1])))+1
-  }
+  # path = "C:\\Users\\Sili\\Documents\\Github\\Bajaj_2_5_2019\\Serum\\Bajaj complete urine and serum data transposed 12.31.18pm 90day 6month.csv"
   
-  if(start_col_index == -Inf){
-    start_col_index = max(which(data[1,]==""))+1
-  }
-  if(start_row_index == -Inf){
-    start_row_index = max(which(data[,1]==""))+1
+  if(grepl("xlsx",path)){
+    data = readxl::read_excel(path, col_names = FALSE, sheet  = sheet )
+    data = data.table(data)
+  }else{
+    data = fread(path)
+    data[data=='']=NA
   }
   
   
-  p = data.table(t(data[1:start_row_index,start_col_index:ncol(data)]))
-  colnames(p) = as.character(p[1,])
+  
+  sample_col_range = min(which(!is.na(data[1,]))):ncol(data)
+  sample_row_range = 1:min(which(!is.na(data[[1]])))
+  compound_col_range = 1:(min(which(!is.na(data[1,]))))
+  compound_row_range = (min(which(!is.na(data[[1]])))):nrow(data)
+  
+  p = t(data[sample_row_range,sample_col_range,with=F])
+  colnames(p) = p[1,]
   p = p[-1,]
-  if(is.null(dim(p))){
-    p = data.table(label = p)
-  }
-  p$label = make.unique(p$label)
+  p = p[,c(ncol(p),1:(ncol(p)-1))]
+  p = data.table(p)
   
-  f = data.table(data[start_row_index:nrow(data),1:start_col_index])
+  p = as.data.table(p)
+  
+  colnames(p) = make.unique(colnames(p), sep = "_")
+  if(!"label"%in%colnames(p)){
+    stop("Cannot find 'label' in your data. Please check the data format requirement.")
+  }
+  if(sum(is.na(p$label))>0){
+    p$label[is.na(p$label)] = "na"
+  }
+  
+  
+  
+  
+  f = data[compound_row_range,compound_col_range,with=F]
   colnames(f) = as.character(f[1,])
   f = f[-1,]
-  if(is.null(dim(f))){
-    f= data.table(label = f)
-  }
-  f$label = make.unique(f$label)
+  f = f[,c(ncol(f),1:(ncol(f)-1)),with=F]
   
-  e = data.matrix(data[(start_row_index+1):nrow(data),(start_col_index+1):ncol(data)])
-  rownames(e) = f$label
-  colnames(e) = p$label
-  
-  result =list(p = p, f = f, e = e)
-  
-  
-  data_matrix = as.matrix(e)
-  sum_NA = sum(is.na(data_matrix))
-  if (sum_NA > 0) {
-    message_from_R = paste0("<em>Please note, your data has ",
-                            sum_NA, " missing values. These values will be replace by half-minimum for each compound before normalization.</em>")
-  }else {
-    message_from_R = ""
-  }
-  num_NAs = c()
-  for(i in 1:nrow(data_matrix)){
-    num_NAs[i] = sum(is.na(data_matrix[i,]))
-  }
-  too_many_na = num_NAs > (0.05 * ncol(data_matrix))
-  # data_matrix = data_matrix[!too_many_na,]
-  # f = f[!too_many_na,]
-  for (i in 1:nrow(data_matrix)) {
-    data_matrix[i, is.na(data_matrix[i, ])] = 1/2 * runif(1,min(data_matrix[i,!is.na(data_matrix[i, ])])*0.9,min(data_matrix[i,!is.na(data_matrix[i, ])])*1.1)
-  }
-  constant_compound = apply(data_matrix,1,sd,na.rm = TRUE) == 0
-  data_matrix = data_matrix[!constant_compound,]
-  f = f[!constant_compound,]
-  if (!"label" %in% names(p)) {
-    stop("cannot find 'label' in your dataset. Please download the example file and read the second sheet: 'Explanation'. ")
-  }
-  if (!"batch" %in% names(p)) {
-    stop("cannot find 'batch' in your dataset. Please download the example file and read the second sheet: 'Explanation'.")
-  }
-  if (!"sampleType" %in% names(p)) {
-    stop("cannot find 'sampleType' in your dataset. Please download the example file and read the second sheet: 'Explanation'.")
-  }
-  if (!"time" %in% names(p)) {
-    stop("cannot find 'time' in your dataset. Please download the example file and read the second sheet: 'Explanation'.")
-  }
-  if (!"qc" %in% unique(p$sampleType)) {
-    stop("cannot find 'qc' in your dataset. Please download the example file and read the second sheet: 'Explanation'.")
-  }
-  if (!"sample" %in% unique(p$sampleType)) {
-    stop("cannot find 'sample' in your dataset. Please download the example file and read the second sheet: 'Explanation'.")
-  }
-  p$time = as.numeric(p$time)
-  if (sum(is.na(p$time))>0) {
-    stop(paste0("'time' has NA "))
-  }
-  if (any(table(p$batch[p$sampleType == "qc"]) < 5)) {
-    stop("Some batches have too little QCs. At least 5 qc needed for EACH batch.")
+  f = as.data.table(f)
+  colnames(f) = make.unique(colnames(f), sep = "_")
+  if(sum(is.na(f$label))>0){
+    f$label[is.na(f$label)] = "na"
   }
   
   
+  e = data[compound_row_range, sample_col_range, with = F]
+  colnames(e) = as.character(e[1,])
+  colnames(e)[is.na(colnames(e))] = "na"
+  e = e[-1,]
   
-  good_index = which(p$sampleType %in% c("qc", "validate", "sample"))
-  bad_index = which(!p$sampleType %in% c("qc", "validate", "sample"))
+  e = data.table(label = e$label, sapply(e[,-1,with=F], function(x){
+    as.numeric(x)
+  }))
   
-  p_good = p[good_index, ]
-  data_matrix_good = data_matrix[,good_index]
+  colnames(e) = make.unique(colnames(e), sep = "_")
+  e$label[is.na(e$label)] = "na"
+  e$label = f$label
+  colnames(e) = c("label",p$label)
   
   
-  p_bad = p[bad_index, ]
-  data_matrix_bad = data_matrix[,bad_index]
+  e_matrix = data.matrix(e[,-1,with=F])
   
-  sample_rank = rank(p_good$time, ties.method = "first")
-  sample_order = order(p_good$time, decreasing = FALSE)
-  
-  sample_time = p_good$time
-  data_matrix = data_matrix_good[, sample_order]
-  # p = p[sample_order, ]
-  # p$time = order(p$time)
-  
-  print(length(sample_rank))
-  
-  # p$sampleType[!p$sampleType %in% c("qc", "validate")] = "sample"
-  return(list(e = data_matrix_good, f = f, p = p_good, data_matrix = data_matrix,
-              sample_size_summary = as.data.frame.matrix(table(p$batch,
-                                                               p$sampleType)), sample_order = sample_order, sample_time = sample_time,
-              bad_p = p_bad,bad_data_matrix = data_matrix_bad,
-              sample_rank = sample_rank, message_from_R = message_from_R, good_index = good_index, bad_index = bad_index))
+  return(list(p = p, f = f, e = e, e_matrix = e_matrix))
 }
