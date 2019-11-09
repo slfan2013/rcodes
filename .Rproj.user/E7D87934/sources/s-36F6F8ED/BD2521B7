@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1573336031737.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "915596623",
+    "id" : "BD2521B7",
+    "lastKnownWriteTime" : 1573336042,
+    "last_content_update" : 1573336042792,
+    "path" : "~/Library/Mobile Documents/com~apple~CloudDocs/PhD Biostatistics/Research/rcodes/aggregate_p_f_e.R",
+    "project_path" : "aggregate_p_f_e.R",
+    "properties" : {
+        "cursorPosition" : "5,2",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
