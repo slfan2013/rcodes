@@ -1,7 +1,7 @@
 # @author Dinesh Barupal dinkumar@ucdavis.edu
 # @version 1.0 July 2016
 # @use call "getMetaMapp" function via a Ajax call from JS.
-
+pacman::p_load(RColorBrewer, officer, rvg, ggplot2, dplyr, ggrepel, extrafont, dynamicTreeCut, plotly, htmlwidgets)
 getChemSimNet <- function (cids, cutoff=0.7) {
   #cids <- c(1:5)
   #cutoff <- 0.7
